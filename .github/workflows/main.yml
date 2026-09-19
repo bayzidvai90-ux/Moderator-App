@@ -161,6 +161,7 @@ jobs:
             --stacktrace \
             --info \
             --console=plain \
+            --warning-mode all \
             2>&1 | tee ../gradle-build.log
 
           EXIT_CODE=${PIPESTATUS[0]}
@@ -171,17 +172,17 @@ jobs:
           echo "========================================"
 
           echo ""
-          echo "========== ERROR SUMMARY =========="
+          echo "========== ACTUAL COMPILER ERROR =========="
 
-          grep -n -E \
-            "What went wrong|Execution failed|FAILURE|Could not|error:|ERROR|Caused by:" \
+          grep -n -B 8 -A 15 -E \
+            "error:|ERROR:|FAILURE:|Execution failed|What went wrong|Caused by:" \
             ../gradle-build.log \
-            | tail -n 150 || true
+            | tail -n 250 || true
 
           echo ""
-          echo "========== LAST 200 LOG LINES =========="
+          echo "========== LAST 250 LOG LINES =========="
 
-          tail -n 200 ../gradle-build.log
+          tail -n 250 ../gradle-build.log
 
           exit $EXIT_CODE
 
