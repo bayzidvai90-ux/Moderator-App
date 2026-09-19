@@ -94,23 +94,36 @@ jobs:
           set -e
           npx cap sync android
 
-      # 9. Verify AndroidX
-      - name: Verify AndroidX
+      # 9. Fix Missing AndroidX Properties
+      - name: Fix Missing AndroidX Properties
         shell: bash
         run: |
           set -e
 
+          touch android/gradle.properties
+
+          if ! grep -q "^android.useAndroidX=" android/gradle.properties; then
+            echo "android.useAndroidX=true" >> android/gradle.properties
+          else
+            sed -i \
+              's/^android.useAndroidX=.*/android.useAndroidX=true/' \
+              android/gradle.properties
+          fi
+
+          if ! grep -q "^android.enableJetifier=" android/gradle.properties; then
+            echo "android.enableJetifier=true" >> android/gradle.properties
+          else
+            sed -i \
+              's/^android.enableJetifier=.*/android.enableJetifier=true/' \
+              android/gradle.properties
+          fi
+
+          echo ""
           echo "===== android/gradle.properties ====="
           cat android/gradle.properties
 
-          grep -q "^android.useAndroidX=true" \
-            android/gradle.properties
-
-          grep -q "^android.enableJetifier=true" \
-            android/gradle.properties
-
           echo ""
-          echo "AndroidX configuration verified."
+          echo "AndroidX properties fixed."
 
       # 10. Verify Android project
       - name: Check Android Project
