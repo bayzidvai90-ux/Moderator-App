@@ -16,17 +16,13 @@ jobs:
 
     steps:
 
-      # ==============================
       # 1. Checkout
-      # ==============================
       - name: Checkout Project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      # ==============================
-      # 2. Node.js 22
-      # ==============================
+      # 2. Node.js
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           package-manager-cache: false
@@ -36,9 +32,7 @@ jobs:
           node -v
           npm -v
 
-      # ==============================
       # 3. Java 17
-      # ==============================
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -50,9 +44,7 @@ jobs:
           java -version
           echo "JAVA_HOME=$JAVA_HOME"
 
-      # ==============================
       # 4. Android SDK
-      # ==============================
       - name: Prepare Android SDK
         shell: bash
         run: |
@@ -66,95 +58,61 @@ jobs:
             "platforms;android-35" \
             "build-tools;35.0.0"
 
-      # ==============================
-      # 5. Fix Vite / esbuild
-      # ==============================
-      - name: Fix Vite Dependencies
-        shell: bash
-        run: |
-          set -e
-
-          npm install -D \
-            vite@^8.3.0 \
-            esbuild@^0.28.2 \
-            @vitejs/plugin-react@^6.1.1 \
-            --legacy-peer-deps
-
-      # ==============================
-      # 6. Install Dependencies
-      # ==============================
-      - name: Install All Dependencies
+      # 5. Install dependencies
+      - name: Install Dependencies
         shell: bash
         run: |
           set -e
           npm install --legacy-peer-deps
 
-      # ==============================
-      # 7. Verify Dependencies
-      # ==============================
-      - name: Verify Dependencies
+      # 6. Verify package versions
+      - name: Verify Project
         shell: bash
         run: |
-          npm ls vite esbuild @vitejs/plugin-react --depth=0 || true
+          echo "===== package.json ====="
+          cat package.json
 
-      # ==============================
-      # 8. Build Web App
-      # ==============================
+          echo ""
+          echo "===== Node ====="
+          node -v
+
+          echo ""
+          echo "===== NPM ====="
+          npm -v
+
+      # 7. Build web application
       - name: Build Web App
         shell: bash
         run: |
           set -e
           npm run build
 
-      # ==============================
-      # 9. Capacitor Sync
-      # ==============================
+      # 8. Capacitor sync
       - name: Sync Capacitor Android
         shell: bash
         run: |
           set -e
-
-          node -v
           npx cap sync android
 
-      # ==============================
-      # 10. ENABLE ANDROIDX
-      # ==============================
-      - name: Enable AndroidX
+      # 9. Verify AndroidX
+      - name: Verify AndroidX
         shell: bash
         run: |
           set -e
 
-          touch android/gradle.properties
-
-          if grep -q "^android.useAndroidX=" android/gradle.properties; then
-            sed -i \
-              's/^android.useAndroidX=.*/android.useAndroidX=true/' \
-              android/gradle.properties
-          else
-            echo "android.useAndroidX=true" \
-              >> android/gradle.properties
-          fi
-
-          if grep -q "^android.enableJetifier=" android/gradle.properties; then
-            sed -i \
-              's/^android.enableJetifier=.*/android.enableJetifier=true/' \
-              android/gradle.properties
-          else
-            echo "android.enableJetifier=true" \
-              >> android/gradle.properties
-          fi
-
-          echo ""
-          echo "================================"
-          echo "ANDROIDX CONFIGURATION"
-          echo "================================"
-
+          echo "===== android/gradle.properties ====="
           cat android/gradle.properties
 
-      # ==============================
-      # 11. Check Android Project
-      # ==============================
+          grep -q "^android.useAndroidX=true" \
+            android/gradle.properties
+
+          grep -q "^android.enableJetifier=true" \
+            android/gradle.properties
+
+          echo ""
+          echo "AndroidX configuration verified."
+
+      # 10. Verify Android project
       - name: Check Android Project
         working-directory: android
         shell: bash
@@ -166,15 +124,17 @@ jobs:
           ./gradlew --version
 
           echo ""
-          echo "================================"
-          echo "ANDROID PROJECT"
-          echo "================================"
+          echo "===== Android Variables ====="
 
+          if [ -f variables.gradle ]; then
+            cat variables.gradle
+          fi
+
+          echo ""
+          echo "===== Android Project ====="
           ls -la
 
-      # ==============================
-      # 12. Build APK
-      # ==============================
+      # 11. Build APK
       - name: Build Debug APK
         working-directory: android
         shell: bash
@@ -193,9 +153,9 @@ jobs:
           EXIT_CODE=${PIPESTATUS[0]}
 
           echo ""
-          echo "================================"
-          echo "GRADLE EXIT CODE: $EXIT_CODE"
-          echo "================================"
+          echo "========================================"
+          echo "GRADLE BUILD EXIT CODE: $EXIT_CODE"
+          echo "========================================"
 
           echo ""
           echo "========== ERROR SUMMARY =========="
@@ -203,34 +163,30 @@ jobs:
           grep -n -E \
             "What went wrong|Execution failed|FAILURE|Could not|error:|ERROR|Caused by:" \
             ../gradle-build.log \
-            | tail -n 120 || true
+            | tail -n 150 || true
 
           echo ""
-          echo "========== LAST LOG LINES =========="
+          echo "========== LAST 200 LOG LINES =========="
 
-          tail -n 150 ../gradle-build.log
+          tail -n 200 ../gradle-build.log
 
           exit $EXIT_CODE
 
-      # ==============================
-      # 13. Check APK
-      # ==============================
+      # 12. Find APK
       - name: Check APK
         if: success()
         shell: bash
         run: |
-          echo "================================"
+          echo "========================================"
           echo "APK FILES"
-          echo "================================"
+          echo "========================================"
 
           find android/app/build/outputs/apk \
             -type f \
             -name "*.apk" \
             -print
 
-      # ==============================
-      # 14. Upload APK
-      # ==============================
+      # 13. Upload APK
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
@@ -238,3 +194,12 @@ jobs:
           name: BANGLA-TUR-BD-Moderator-APK
           path: android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      # 14. Upload build log if failed
+      - name: Upload Gradle Error Log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gradle-Build-Error-Log
+          path: gradle-build.log
+          if-no-files-found: ignore
