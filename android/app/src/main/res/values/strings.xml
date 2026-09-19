@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BANGLA TUR BD Moderator</string>
+    <string name="title_activity_main">BANGLA TUR BD Moderator</string>
+    <string name="package_name">com.banglaturbd.moderator</string>
+    <string name="custom_url_scheme">com.banglaturbd.moderator</string>
+</resources>

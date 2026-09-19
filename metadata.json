@@ -1,0 +1,6 @@
+{
+  "name": "BANGLA TUR BD Moderator",
+  "description": "Real-time moderator panel for Bangla Tur BD, managing matches, users, and tournament data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
